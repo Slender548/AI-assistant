@@ -1,5 +1,7 @@
 import speech_recognition as sr
 import AppOpener as opener
+import os
+from googletrans import Translator
 from pywhatkit import search
 from ctypes import cast, POINTER
 from comtypes import CLSCTX_ALL
@@ -10,17 +12,26 @@ interface = devices.Activate(IAudioEndpointVolume._iid_, CLSCTX_ALL, None)
 volume = cast(interface, POINTER(IAudioEndpointVolume))
 recog = sr.Recognizer()
 micro = sr.Microphone()
+_settings = {'voiceInput': True, 'textInput':True, 'textOutput':True, 'voiceOutput':True}
 while True:
     with micro as source:
         recog.adjust_for_ambient_noise(source)
         audio = recog.listen(source)
-        #try:
-        #    inp = recog.recognize_google(audio, language='ru-RU')
-        #except:
-        #    continue
-        inp = input()
+        if _settings['voiceInput']:
+            try:
+                inp = recog.recognize_google(audio, language='ru-RU')
+            except:
+                continue
+        if _settings['textInput']:
+            inp = input()
         inp = inp.lower().split()
         print(inp)
+        if 'выключи' in inp or 'выключить' in inp and 'компьютер' in inp or 'ноутбук' in inp:
+            if _settings['textOutput']:
+                print("Принято. Выключаю компьютер")
+            if _settings['voiceOutput']:
+                ...
+            os.system("shutdown /s /t 1")
         if 'открой' in inp or 'запусти' in inp:
             try:
                 open = inp.index('запусти')
@@ -29,6 +40,10 @@ while True:
             finally:
                 try:
                     opener.open(inp[open+1],match_closest=True)
+                    if _settings['textOutput']:
+                        print("Принято. Запускаю приложение.")
+                    if _settings['voiceOutput']:
+                        ...
                 except:
                     print("Такого приложения не существует")
         if 'выключи' in inp or 'закрой' in inp:
@@ -38,39 +53,79 @@ while True:
                 open = inp.index('закрой')
             finally:
                 try:
+                    if _settings['textOutput']:
+                        print("Принято. Закрываю приложение.")
+                    if _settings['voiceOutput']:
+                        ...
                     opener.close(inp[open+1],match_closest=True)
                 except:
                     print(f'Приложение {inp[open+1]} уже закрыто или не существует')
         if 'покажи' in inp and 'приложение' in inp or 'приложения' in inp:
+            if _settings['textOutput']:
+                print("Принято. Приложения, которые я могу открывать и закрывать:")
+            if _settings['voiceOutput']:
+                ...
             opener.open('ls')
         if 'спроси' in inp:
+            if _settings['textOutput']:
+                print("Вбиваю ваш вопрос в поиск.")
+            if _settings['voiceOutput']:
+                ...
             question = inp.index('спроси')
             search(" ".join(inp[question+1:]))
         elif 'что' in inp and 'такое' in inp:
+            if _settings['textOutput']:
+                print("Вбиваю ваш вопрос в поиск.")
+            if _settings['voiceOutput']:
+                ...
             question = inp.index('такое')
-            search('что '+" ".join(inp[question:]))
+            search(" ".join(inp[question-1:]))
         elif 'почему' in inp:
+            if _settings['textOutput']:
+                print("Вбиваю ваш вопрос в поиск.")
+            if _settings['voiceOutput']:
+                ...
             question = inp.index('почему')
             search(" ".join(inp[question:]))
-        if 'громкость до' in inp:
-            vol = inp.index('до')
-            if 'повысь' in inp or 'повысить' in inp:
-                volume.SetMasterVolumeLevel()
-            elif 'понизь' in inp or 'понизить' in inp:
-                volume.SetMasterVolumeLevel()
-            else:
-                volume.SetMasterVolumeLevel()
-        elif 'громкость' in inp:
+        if 'громкость' in inp:
             vol = inp.index('громкость')+1
-            while int(inp[vol])=="":
-                print(type(inp[vol]))
-                if vol >= len(inp):
-                    print('Какая громкость? Повторите')
+            try:
+                int(inp[vol])
+            except:
+                vol +=1
+            try:
+                volume.SetMasterVolumeLevel(int(-(-0.66*int(inp[vol])+66)), None)
+                if _settings['textOutput']:
+                    print(f"Ставлю громкость на {inp[vol]}%.")
+                if _settings['voiceOutput']:
+                    ...
+            except:
+                if _settings['textOutput']:
+                    print("Вбиваю ваш ответ в поиск.")
+                if _settings['voiceOutput']:
+                    ...
+        if 'переведи' in inp and 'английский' in inp:
+            if _settings['textOutput']:
+                print("Что конкретно перевести? Напишите/Скажите.")
+            if _settings['voiceOutput']:
+                ...
+            if _settings['textInput']:
+                text = input()
+            elif _settings["voiceInput"]:
+                audio = recog.listen(source)
+                try:
+                    text = recog.recognize_google(audio)
+                except:
+                    print("Ожидаю. Что нужно перевести? Напишите.")
+                    text = input()
+            if _settings['textOutput']:
+                try:
+                    print(f"Перевод: {Translator().translate(text,dest='ru-RU')}")
+                except:
+                    print("Не получилось перевести")
                     continue
-                vol += 1
-            volume.SetMasterVolumeLevel(int(-(-0.66*int(inp[vol])+66)), None)
-
-
+            if _settings['voiceOutput']:
+                ...
 
 
 
